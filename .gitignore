@@ -111,3 +111,17 @@ docs/_build/
 target/
 output/
 python_boilerplate/
+
+# ==========================================
+# Linters & Formatters
+# ==========================================
+.ruff_cache/
+
+# ==========================================
+# Security Keys & Additional Caches
+# ==========================================
+kaggle.json
+access_token
+.scratch/
+.pytest_cache/
+.mypy_cache/

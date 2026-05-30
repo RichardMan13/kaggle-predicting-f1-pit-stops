@@ -1,85 +1,95 @@
-# Kaggle Express Template
+# Predict F1 Pit Stops (Kaggle Playground S6E5)
 
-Uma arquitetura de pipeline leve, modular, determinística e focada em validação cruzada robusta para competições do Kaggle.
-
-## Estrutura de Pastas
-
-```text
-├── data/
-│   ├── external/           # Dados de fontes externas/APIs públicas
-│   ├── interim/            # Dados intermediários transformados
-│   ├── processed/          # Dados finais processados prontos para modelagem
-│   └── raw/                # Arquivos originais da competição (train.csv, test.csv)
-├── artifacts/              # Modelos treinados (.pkl), previsões Out-of-Fold (OOF) e logs
-├── notebooks/              # Exclusivo para EDA rápida e testes de hipóteses
-│   └── 01_exploratory_analysis.ipynb
-├── src/                    # O coração estruturado do seu pipeline
-│   ├── config.py           # Paths, SEED, Hiperparâmetros e variáveis globais
-│   ├── data_loader.py      # Leitura dos dados e configuração do Cross-Validation (K-Fold)
-│   ├── features.py         # Funções puras de Engenharia de Features
-│   ├── models.py           # Definição e arquitetura dos modelos
-│   ├── train.py            # Script principal: roda o CV, calcula métricas, salva artefatos e gera OOF
-│   └── predict.py          # Script de inferência: lê os modelos treinados e gera a submissão final
-├── submissions/            # Armazena os arquivos de submissão finais (.csv) prontos para envio
-```
-
-## Como Começar um Novo Desafio
-
-1. **Configurar o Ambiente com Conda**:
-   Crie o ambiente virtual utilizando o arquivo de configuração `environment.yml` que já contém todas as dependências pré-configuradas em **Python 3.10** e instale a pasta `src` local em modo editável:
-   ```bash
-   conda env create -f environment.yml
-   conda activate cookiecutter-kaggle
-   pip install -e .
-   ```
-
-2. **Configurar as credenciais da Kaggle API**:
-   * Acesse sua conta no site do Kaggle e vá em **Settings** > **API** > **Create New Token** para baixar o arquivo `kaggle.json`.
-   * Salve este arquivo na pasta correta do seu computador:
-     * No Windows: `C:\Users\SeuUsuario\.kaggle\kaggle.json`
-     * No Linux/macOS: `~/.kaggle/kaggle.json`
-   * Aceite os termos de regras no site da própria competição do Kaggle antes de prosseguir.
-
-3. **Baixar os dados da competição de forma automática**:
-   ```bash
-   inv download-data --competition=nome-da-competicao
-   ```
-
-4. **Configurar suas variáveis e caminhos** em `src/config.py`.
-
-5. **Executar o pipeline de treino** (com limpeza automática de caches):
-   ```bash
-   inv train
-   ```
-
-6. **Gerar previsões de submissão** usando os modelos do CV:
-   ```bash
-   inv predict
-   ```
+A lightweight, high-performance, and modular pipeline architecture focused on robust cross-validation to predict whether a Formula 1 driver will pit on the next lap.
 
 ---
 
-## Automação com Invoke (`tasks.py`)
+## Goal and Metrics
 
-Em vez de usar `Makefile`, este template utiliza a biblioteca **Invoke** escrita em Python puro, funcionando em Windows, macOS e Linux.
+*   **Goal:** Predict the probability that a driver will make a pit stop on the next lap (target `PitNextLap`).
+*   **Evaluation Metric:** Area under the ROC curve (ROC AUC Score).
+*   **Domain Context:** The dataset is inspired by a real F1 race strategy dataset. The feature `Normalized_TyreLife` was intentionally removed to prevent trivial predictions, requiring robust feature engineering to estimate tire degradation.
 
-* **Listar tarefas disponíveis**:
-  ```bash
-  inv --list
-  ```
-* **Limpar cache e arquivos temporários**:
-  ```bash
-  inv clean
-  ```
-* **Formatar código com Ruff**:
-  ```bash
-  inv format
-  ```
-* **Executar linter (Ruff check)**:
-  ```bash
-  inv lint
-  ```
-* **Executar todas as verificações consecutivamente (Formatação + Lint)**:
-  ```bash
-  inv check
-  ```
+---
+
+## Project Structure
+
+```text
+├── .agents/
+│   └── skills/             # Custom AI Agent Skills (EDA, CV, Feature Ideation, etc.)
+├── data/
+│   ├── external/           # External F1 data (e.g., Ergast API / FastF1)
+│   ├── interim/            # Transformed intermediate data
+│   ├── processed/          # Final processed data ready for modeling
+│   └── raw/                # Original competition files (train.csv, test.csv, sample_submission.csv)
+├── artifacts/              # Trained models (.pkl), Out-of-Fold (OOF) predictions, and logs
+├── notebooks/              # Sandbox for quick exploratory data analysis (EDA) and prototypes
+├── src/                    # The structured heart of the pipeline
+│   ├── config.py           # Paths, reproducibility seeds, model parameters, and API keys
+│   ├── data_loader.py      # Data loading and robust cross-validation fold splitting
+│   ├── features.py         # Domain-specific F1 feature engineering (tire wear, safety cars, etc.)
+│   ├── models.py           # Machine learning model architectures (LightGBM, XGBoost, CatBoost, PyTorch)
+│   ├── train.py            # Cross-validation execution, metric logging, and OOF generation
+│   └── predict.py          # Final inference on test.csv and submission validation
+├── submissions/            # Final prediction CSV files ready for Kaggle submission
+└── tasks.py                # Command orchestration via Invoke
+```
+
+---
+
+## How to Get Started
+
+### 1. Configure the Environment with Conda
+Create the virtual environment containing all machine learning dependencies and GPU support (CUDA 12.1):
+```bash
+# Create the virtual environment
+conda env create -f environment.yml
+
+# Activate the environment
+conda activate cookiecutter-kaggle
+
+# Install the src package in editable mode
+pip install -e .
+```
+
+### 2. Kaggle API Authentication (Recommended Method)
+This repository is configured to natively read the new Kaggle API Token format:
+1. Log in to your Kaggle account -> Settings -> click "Create New Token" under the "API Tokens (Recommended)" section.
+2. On Windows, save the downloaded token (`KGAT_...`) exactly into the file:
+   `C:\Users\ricar\.kaggle\access_token`
+3. Alternatively, create a `.env` file from the `.env.template` in the project root and add:
+   ```env
+   KAGGLE_API_TOKEN=your_token_here
+   ```
+
+### 3. Download the Competition Data Automatically
+```bash
+inv download-data --competition=playground-series-s6e5
+```
+*This command automatically downloads and extracts the competition files directly into `data/raw/`.*
+
+---
+
+## AI Agent Skills
+
+This repository includes a `.agents/skills/` directory containing structured workflows to guide developers and AI coding agents.
+
+Available skills:
+*   `/kaggle-eda-loop` — Systematic, bug-free exploratory data analysis checklist.
+*   `/kaggle-cv-guardrails` — Strict prevention of data leakage during pre-processing and training.
+*   `/kaggle-feature-ideation` — F1 domain-specific feature engineering formulas (tire wear, safety car, pit lane deltas).
+*   `/kaggle-model-tuner` — Stable, robust hyperparameter tuning using Optuna.
+*   `/kaggle-submission-sanity` — Final checklist to validate prediction files before uploading.
+
+---
+
+## Automation and Useful Commands (tasks.py)
+
+We use the Invoke library to orchestrate pipeline tasks across platforms.
+
+*   **List tasks:** `inv --list`
+*   **Clean temporary files:** `inv clean`
+*   **Format code:** `inv format`
+*   **Run linter (Ruff):** `inv lint`
+*   **Run training pipeline:** `inv train` (runs cross-validation training for all configured models)
+*   **Run inference pipeline:** `inv predict` (generates the final submission file in `submissions/`)
