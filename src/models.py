@@ -1,6 +1,9 @@
 from catboost import CatBoostClassifier, CatBoostRegressor
 from lightgbm import LGBMClassifier, LGBMRegressor
 from xgboost import XGBClassifier, XGBRegressor
+from sklearn.linear_model import LogisticRegression
+from sklearn.neural_network import MLPClassifier
+from sklearn.neighbors import KNeighborsClassifier
 
 from src import config
 
@@ -10,7 +13,7 @@ def get_model(model_name: str, mode: str = "classifier"):
     Retorna a instância do modelo desejado baseado no nome e configuração.
 
     Args:
-        model_name: Nome do algoritmo ('lightgbm', 'xgboost', 'catboost')
+        model_name: Nome do algoritmo ('lightgbm', 'xgboost', 'catboost', 'logistic', 'mlp', 'knn')
         mode: Tipo de tarefa ('classifier' ou 'regressor')
     """
     params = config.MODEL_PARAMS.get(model_name, {})
@@ -22,6 +25,12 @@ def get_model(model_name: str, mode: str = "classifier"):
             return XGBClassifier(**params)
         elif model_name == "catboost":
             return CatBoostClassifier(**params)
+        elif model_name == "logistic":
+            return LogisticRegression(**params)
+        elif model_name == "mlp":
+            return MLPClassifier(**params)
+        elif model_name == "knn":
+            return KNeighborsClassifier(**params)
         else:
             raise ValueError(f"Modelo {model_name} desconhecido para classificação.")
 
@@ -33,7 +42,9 @@ def get_model(model_name: str, mode: str = "classifier"):
         elif model_name == "catboost":
             return CatBoostRegressor(**params)
         else:
-            raise ValueError(f"Modelo {model_name} desconhecido para regressão.")
+            raise ValueError(
+                f"Modelo {model_name} desconhecido para regressão ou não suportado."
+            )
     else:
         raise ValueError(
             f"Modo {mode} desconhecido. Escolha 'classifier' ou 'regressor'."

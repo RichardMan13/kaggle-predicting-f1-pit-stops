@@ -4,6 +4,8 @@ from pathlib import Path
 
 from invoke import task
 
+from src import config
+
 BASE_DIR = Path(__file__).resolve().parent
 
 
@@ -82,21 +84,88 @@ def download_data(c, competition):
 
 
 @task(pre=[clean])
-def train(c, model="lightgbm", mode="classifier"):
+def train(c, model="all", mode="classifier", prune=False):
     """
     Roda o pipeline principal de treino cruzado (CV).
-    Exemplo de uso: inv train --model=xgboost --mode=classifier
+    Exemplo de uso: inv train (roda todos) ou inv train --model=xgboost --mode=classifier
     """
-    print(f"Disparando pipeline de treino para o modelo '{model}' no modo '{mode}'...")
-    # Executa o módulo train com python
-    c.run("python src/train.py", pty=True)
+    prune_flag = " --prune" if prune else ""
+    if model == "all":
+        models_to_run = ["xgboost", "logistic", "mlp"]
+    else:
+        models_to_run = [model]
+
+    for m in models_to_run:
+        print("\n" + "=" * 50)
+        print(
+            f"Disparando pipeline de treino para o modelo: '{m}' no modo '{mode}' | Prune: {prune}..."
+        )
+        print("=" * 50 + "\n")
+        c.run(f"python -m src.train --model {m} --mode {mode}{prune_flag}", pty=False)
 
 
 @task
-def predict(c, model="lightgbm", mode="classifier"):
+def predict(c, model="all", mode="classifier", prune=False):
     """
     Roda o pipeline de inferência final com os modelos treinados.
-    Exemplo de uso: inv predict --model=lightgbm
+    Exemplo de uso: inv predict (roda todos) ou inv predict --model=xgboost
     """
-    print("Disparando pipeline de inferência...")
-    c.run("python src/predict.py", pty=True)
+    prune_flag = " --prune" if prune else ""
+    if model == "all":
+        models_to_run = ["xgboost", "logistic", "mlp"]
+    else:
+        models_to_run = [model]
+
+    for m in models_to_run:
+        print("\n" + "=" * 50)
+        print(
+            f"Disparando pipeline de inferência para o modelo: '{m}' no modo '{mode}' | Prune: {prune}..."
+        )
+        print("=" * 50 + "\n")
+        c.run(f"python -m src.predict --model {m} --mode {mode}{prune_flag}", pty=False)
+
+
+@task
+def tune(c, model="all"):
+    """
+    Roda a otimizacao de hiperparametros com Optuna.
+    Exemplo de uso: inv tune (roda todos) ou inv tune --model=mlp
+    """
+    if model == "all":
+        models_to_run = ["xgboost", "logistic", "mlp"]
+    else:
+        models_to_run = [model]
+
+    for m in models_to_run:
+        print("\n" + "=" * 50)
+        print(f"Disparando otimizacao com Optuna para o modelo: '{m}'")
+        print("=" * 50 + "\n")
+        c.run(f"python -m src.tune --model {m}", pty=False)
+
+
+@task
+def blend(c):
+    """
+    Executa o blending das predicoes dos modelos da trindade.
+    Exemplo de uso: inv blend
+    """
+    print("Disparando blending de modelos...")
+    c.run("python -m src.blend", pty=False)
+
+
+@task
+def submit(c, competition, file="submissions/submission.csv", message="My submission"):
+    """
+    Envia uma submissao para a competicao do Kaggle.
+    Exemplo de uso: inv submit --competition=nome-da-competicao --file=submissions/submission.csv --message="Minha submissao"
+    """
+    file_path = BASE_DIR / file
+    if not file_path.exists():
+        print(f"[ERRO] O arquivo {file_path} não existe!")
+        return
+
+    print(f"Enviando arquivo {file_path.name} para a competicao '{competition}'...")
+    c.run(
+        f'kaggle competitions submit -c {competition} -f {file_path} -m "{message}"',
+        pty=False,
+    )

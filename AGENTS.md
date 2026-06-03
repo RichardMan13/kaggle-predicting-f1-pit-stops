@@ -17,6 +17,8 @@ The codebase operates in a single global context. See `docs/agents/domain.md`.
 ## Rules
 
 - **Never use emojis!** Under no circumstances should the agent use emojis in its responses, documentation, file edits, issue titles, comments, or pull requests. Keep all communications strictly professional and text-based.
+- **Check existing skills:** Always consult `.agents/skills` before generating new scripts.
+- **Understand the context:** Always review `CONTEXT.md` to understand the domain and project constraints before making structural or logic changes.
 
 ## Execution Environment
 

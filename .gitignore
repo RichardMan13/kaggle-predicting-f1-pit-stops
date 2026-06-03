@@ -125,3 +125,5 @@ access_token
 .scratch/
 .pytest_cache/
 .mypy_cache/
+*.db
+tuning_history.db

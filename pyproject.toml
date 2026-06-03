@@ -29,6 +29,6 @@ select = [
 ignore = []
 
 [tool.ruff.lint.per-file-ignores]
-# Ignorar avisos de linha muito longa (E501) e outros específicos em Notebooks,
-# já que em análise exploratória o estilo é mais flexível.
-"notebooks/**/*.ipynb" = ["E501"]
+# Ignorar avisos de linha muito longa (E501), múltiplos comandos na mesma linha (E702)
+# e variáveis indefinidas (F821) em Notebooks, já que o fluxo de execução entre células é dinâmico.
+"notebooks/**/*.ipynb" = ["E501", "E702", "F821"]
