@@ -10,8 +10,7 @@ def blend_pipeline():
     print("Iniciando Pipeline de Blending Dinamico (Robust Rank Ensemble)...")
 
     # 1. Detectar OOFs disponiveis na pasta de artefatos
-    # Restringido para rodar exclusivamente xgboost e knn (ignorando o restante dos OOFs salvos na pasta)
-    supported_models = ["xgboost", "knn"]
+    supported_models = ["xgboost", "lightgbm", "catboost", "logistic", "mlp", "knn"]
     oof_dfs = {}
 
     for model in supported_models:
@@ -32,7 +31,7 @@ def blend_pipeline():
 
     y_true = oof_dfs[models_list[0]][config.TARGET_COL].values
 
-    # Solução B: Conversao das probabilidades brutas para Ranks Percentuais
+    # Conversao das probabilidades brutas para Ranks Percentuais
     # Isso neutraliza problemas de escalas e calibrações discrepantes entre famílias.
     ranks = []
     for model in models_list:
@@ -41,22 +40,18 @@ def blend_pipeline():
         ranks.append(rank)
         print(f"  * {model} OOF AUC: {roc_auc_score(y_true, pred):.5f}")
 
-    # 2. Otimizar os pesos usando SLSQP baseando-se nos Ranks com M-1 variáveis de liberdade
+    # Otimizar os pesos usando scipy minimize baseando-se nos Ranks com M-1 variáveis de liberdade
     # O último peso é determinado deterministicamente para garantir soma 1.0.
     M = len(models_list)
 
     def objective(x):
         w = list(x)
         w_last = 1.0 - sum(w)
-
-        # A única regra inquebrável: o último peso não pode ser negativo.
-        # Se a soma dos pesos anteriores for > 1.0, w_last fica negativo.
-        if w_last < 0.0:
-            # Retorna um valor ruim (positivo) proporcional ao erro,
-            # guiando o otimizador suavemente de volta para a área válida.
-            return 1.0 + abs(w_last)
-
         w.append(w_last)
+
+        # Funcao de barreira rigida para garantir limites [0.0, 1.0]
+        if any(val < 0.0 or val > 1.0 for val in w):
+            return 99.0  # Penalidade extrema se violar os limites impostos
 
         blend_preds = np.zeros_like(ranks[0])
         for i in range(M):
@@ -68,8 +63,8 @@ def blend_pipeline():
     init_weights = [1.0 / M] * (M - 1)
     bounds = [(0.0, 1.0)] * (M - 1)
 
-    # Mudança Chave: Uso de algoritmo livre de derivadas (Gradient-Free) Powell
-    # Essencial para otimizar superficies não-suaves e degraus como a métrica do AUC.
+    # Uso de algoritmo livre de derivadas (Gradient-Free) Powell
+    # Essencial para otimizar superficies nao-suaves e degraus como a metrica do AUC.
     res = minimize(objective, init_weights, method="Powell", bounds=bounds)
 
     w_opt = list(res.x)

@@ -11,9 +11,7 @@ from src import config, data_loader, features, models
 
 
 def train_pipeline(model_name="lightgbm", mode="classifier"):
-    print(
-        f"Iniciando Pipeline de Treinamento: {model_name} ({mode})"
-    )
+    print(f"Iniciando Pipeline de Treinamento: {model_name} ({mode})")
 
     # Garantir que a pasta de artefatos exista para salvar modelos e logs
     config.ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -29,9 +27,7 @@ def train_pipeline(model_name="lightgbm", mode="classifier"):
         return
 
     # 2. Aplicar Engenharia de Features
-    df_train = features.engineer_features(
-        df_train, is_train=True
-    )
+    df_train = features.engineer_features(df_train, is_train=True)
 
     # 3. Separar Features e Target
     features_cols = [

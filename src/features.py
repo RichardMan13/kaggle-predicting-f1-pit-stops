@@ -9,6 +9,7 @@ COMPOUND_LIMITS = {
     "INTERMEDIATE": 18.0,
 }
 
+
 def engineer_features(df, is_train=True):
     """
     Aplica transformacoes puras e engenharia de features no DataFrame.
@@ -29,11 +30,15 @@ def engineer_features(df, is_train=True):
     # Ordenamos o dataframe localmente por Stint e LapNumber para garantir corretude temporal.
     # GroupBy por Race e Driver (garantindo que nao vaze tempo de um piloto para outro).
     df = df.sort_values(by=["Race", "Driver", "Stint", "LapNumber"])
-    
+
     # Adicionando lags de 3 periodos fechados no Stint
-    df["LapTime_Delta_roll_3"] = df.groupby(["Race", "Driver", "Stint"])["LapTime_Delta"].transform(lambda x: x.rolling(3, min_periods=1).mean())
-    df["Cum_Degradation_roll_3"] = df.groupby(["Race", "Driver", "Stint"])["Cumulative_Degradation"].transform(lambda x: x.rolling(3, min_periods=1).mean())
-    
+    df["LapTime_Delta_roll_3"] = df.groupby(["Race", "Driver", "Stint"])[
+        "LapTime_Delta"
+    ].transform(lambda x: x.rolling(3, min_periods=1).mean())
+    df["Cum_Degradation_roll_3"] = df.groupby(["Race", "Driver", "Stint"])[
+        "Cumulative_Degradation"
+    ].transform(lambda x: x.rolling(3, min_periods=1).mean())
+
     # Retornar o DataFrame a ordem original pelo indice para nao quebrar a alinhacao com y
     df = df.sort_index()
 
